@@ -276,6 +276,11 @@ class Join(TaskSpec):
         for task in thread_tasks:
             if task == last_changed:
                 self.entered_event.emit(my_task.workflow, my_task)
+
+                # Multiple consecutive joins can exhaust existing tree
+                # predictions and dead-end the tree. Refresh predictions
+                task.task_spec._predict(task)
+
                 task._ready()
             else:
                 task.state = Task.COMPLETED
