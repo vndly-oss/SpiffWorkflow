@@ -145,6 +145,12 @@ class Join(TaskSpec):
         waiting_tasks = []
         completed = 0
         for task in tasks:
+
+            # For any conditional tasks - make sure if they were completed
+            # their condition matched the Join connect_if - otherwise skip
+            if not self._task_matches_condidition(task):
+                continue
+
             if task.parent is None or task._has_state(Task.COMPLETED):
                 completed += 1
             else:
@@ -152,6 +158,15 @@ class Join(TaskSpec):
 
         # If the threshold was reached, get ready to fire.
         return force or completed >= threshold, waiting_tasks
+
+    def _task_matches_condidition(self, task):
+        # If the task had any conditional make sure the conditions were met
+        has_conditions = hasattr(task.task_spec, 'cond_task_specs')
+        if not has_conditions:
+            return True
+
+        # If there were any conditions make sure they all match
+        return all([x[0]._matches(task) for x in task.task_spec.cond_task_specs])
 
     def _check_threshold_structured(self, my_task, force=False):
         # Retrieve a list of all activated tasks from the associated
@@ -173,6 +188,11 @@ class Join(TaskSpec):
         for task in tasks:
             # Refresh path prediction.
             task.task_spec._predict(task)
+
+            # For any conditional tasks - make sure if they were completed
+            # their condition matched the Join connect_if - otherwise skip
+            if not self._task_matches_condidition(task):
+                continue
 
             if not self._branch_may_merge_at(task):
                 completed += 1
