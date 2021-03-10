@@ -26,7 +26,7 @@ class JoinTest(TaskSpecTest):
                     'testtask',
                     description='foo')
 
-    def setup_worflow(self, structured=True):
+    def setup_workflow(self, structured=True):
         wf_spec = WorkflowSpec()
         split = Simple(wf_spec, 'split')
         wf_spec.start.connect(split)
@@ -58,7 +58,7 @@ class JoinTest(TaskSpecTest):
         are complete AND they were completed with the correct condition to
         satisfy the join"""
 
-        workflow = self.setup_worflow()
+        workflow = self.setup_workflow()
 
         workflow.complete_task_from_id(
             workflow.get_tasks_from_spec_name('split')[0].id)
@@ -78,7 +78,7 @@ class JoinTest(TaskSpecTest):
             are complete AND they were completed with the correct condition to
             satisfy the join"""
 
-        workflow = self.setup_worflow(structured=False)
+        workflow = self.setup_workflow(structured=False)
 
         workflow.complete_task_from_id(
             workflow.get_tasks_from_spec_name('split')[0].id)
@@ -98,7 +98,7 @@ class JoinTest(TaskSpecTest):
             are complete AND they were completed with the correct condition to
             satisfy the join"""
 
-        workflow = self.setup_worflow()
+        workflow = self.setup_workflow()
 
         workflow.complete_task_from_id(
             workflow.get_tasks_from_spec_name('split')[0].id)
@@ -118,7 +118,7 @@ class JoinTest(TaskSpecTest):
             are complete AND they were completed with the correct condition to
             satisfy the join"""
 
-        workflow = self.setup_worflow(structured=False)
+        workflow = self.setup_workflow(structured=False)
 
         workflow.complete_task_from_id(
             workflow.get_tasks_from_spec_name('split')[0].id)
