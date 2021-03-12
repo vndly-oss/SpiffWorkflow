@@ -148,7 +148,7 @@ class Join(TaskSpec):
 
             # For any conditional tasks - make sure if they were completed
             # their condition matched the Join connect_if - otherwise skip
-            if not self._task_matches_condition(task):
+            if task._has_state(Task.COMPLETED) and not self._task_matches_condition(task):
                 continue
 
             if task.parent is None or task._has_state(Task.COMPLETED):
@@ -191,14 +191,14 @@ class Join(TaskSpec):
 
             # For any conditional tasks - make sure if they were completed
             # their condition matched the Join connect_if - otherwise skip
-            if not self._task_matches_condition(task):
+            if task._has_state(Task.COMPLETED) and not self._task_matches_condition(task):
                 continue
 
             if not self._branch_may_merge_at(task):
                 completed += 1
             elif self._branch_is_complete(task):
                 completed += 1
-            else:
+            elif not task._has_state(Task.COMPLETED) :
                 waiting_tasks.append(task)
 
         # If the threshold was reached, get ready to fire.

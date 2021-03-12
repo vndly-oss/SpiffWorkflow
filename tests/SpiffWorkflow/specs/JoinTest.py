@@ -26,17 +26,21 @@ class JoinTest(TaskSpecTest):
                     'testtask',
                     description='foo')
 
-    def setup_workflow(self, structured=True):
+    def setup_workflow(self, structured=True, threshold=None, cancel=False):
         wf_spec = WorkflowSpec()
         split = Simple(wf_spec, 'split')
         wf_spec.start.connect(split)
 
         if structured:
-            join = Join(wf_spec, 'join', split_task=split.name)
+            join = Join(wf_spec, 'join', threshold=threshold,
+                        split_task=split.name,
+                        cancel=cancel)
         else:
-            join = Join(wf_spec, 'join')
+            join = Join(wf_spec, 'join',
+                        threshold=threshold,
+                        cancel=cancel)
 
-        single = Simple(wf_spec, 'first')
+        single = Simple(wf_spec, 'first', manual=True)
         default = Simple(wf_spec, 'default')
         choice = ExclusiveChoice(wf_spec, 'choice', manual=True)
         end = Simple(wf_spec, 'end')
@@ -54,31 +58,11 @@ class JoinTest(TaskSpecTest):
         return workflow
 
     def test_join_complete_status_structured(self):
-        """ Test that a join is not considered complete if the all the tasks
+        """ Test that a join is considered complete if the all the tasks
         are complete AND they were completed with the correct condition to
         satisfy the join"""
 
-        workflow = self.setup_workflow()
-
-        workflow.complete_task_from_id(
-            workflow.get_tasks_from_spec_name('split')[0].id)
-        workflow.complete_task_from_id(
-            workflow.get_tasks_from_spec_name('first')[0].id)
-        # Complete the choice task but set the data to match the join condition
-        choice_task = workflow.get_tasks_from_spec_name('choice')[0]
-        choice_task.set_data(should_join=True)
-        workflow.complete_task_from_id(choice_task.id)
-
-        # Join should be in completed state
-        self.assertEqual(Task.COMPLETED,
-                         workflow.get_tasks_from_spec_name('join')[0].state)
-
-    def test_join_complete_status_unstructured(self):
-        """ Test that a join is not considered complete if the all the tasks
-            are complete AND they were completed with the correct condition to
-            satisfy the join"""
-
-        workflow = self.setup_workflow(structured=False)
+        workflow = self.setup_workflow(structured=True)
 
         workflow.complete_task_from_id(
             workflow.get_tasks_from_spec_name('split')[0].id)
@@ -95,8 +79,8 @@ class JoinTest(TaskSpecTest):
 
     def test_join_conditional_not_ready_status_structured(self):
         """ Test that a join is not considered complete if the all the tasks
-            are complete AND they were completed with the correct condition to
-            satisfy the join"""
+            are complete BUT they were not completed with the correct condition
+            to satisfy the join"""
 
         workflow = self.setup_workflow()
 
@@ -113,10 +97,66 @@ class JoinTest(TaskSpecTest):
                          workflow.get_tasks_from_spec_name('join')[
                              0].state)
 
-    def test_join_conditional_not_ready_status_unstructured(self):
-        """ Test that a join is not considered complete if the all the tasks
+    def test_join_tasks_cancelled_structured(self):
+        """ If the join is completed and a conditional task has not been
+            completed it should be cancelled if cancel is set
+        """
+
+        workflow = self.setup_workflow(structured=True,
+                                       threshold=1,
+                                       cancel=True)
+
+        workflow.complete_task_from_id(
+            workflow.get_tasks_from_spec_name('split')[0].id)
+        workflow.complete_task_from_id(
+            workflow.get_tasks_from_spec_name('first')[0].id)
+
+        # Choice should be cancelled at this point
+        self.assertEqual(Task.CANCELLED,
+                         workflow.get_tasks_from_spec_name('choice')[0].state)
+
+    def test_join_complete_status_unstructured(self):
+        """ Test that a join is considered complete if the all the tasks
             are complete AND they were completed with the correct condition to
             satisfy the join"""
+
+        workflow = self.setup_workflow(structured=False)
+
+        workflow.complete_task_from_id(
+            workflow.get_tasks_from_spec_name('split')[0].id)
+        workflow.complete_task_from_id(
+            workflow.get_tasks_from_spec_name('first')[0].id)
+        # Complete the choice task but set the data to match the join condition
+        choice_task = workflow.get_tasks_from_spec_name('choice')[0]
+        choice_task.set_data(should_join=True)
+        workflow.complete_task_from_id(choice_task.id)
+
+        # Join should be in completed state
+        self.assertEqual(Task.COMPLETED,
+                         workflow.get_tasks_from_spec_name('join')[0].state)
+
+    def test_join_tasks_cancelled_unstructured(self):
+        """ If the join is completed and a conditional task has not been
+            completed it should be cancelled if cancel is set
+        """
+
+        workflow = self.setup_workflow(structured=False,
+                                       threshold=1,
+                                       cancel=True)
+
+        workflow.complete_task_from_id(
+            workflow.get_tasks_from_spec_name('split')[0].id)
+        workflow.complete_task_from_id(
+            workflow.get_tasks_from_spec_name('first')[0].id)
+
+        # Choice should be cancelled at this point
+        self.assertEqual(Task.CANCELLED,
+                         workflow.get_tasks_from_spec_name('choice')[0].state)
+
+    def test_join_conditional_not_ready_status_unstructured(self):
+        """ Test that a join is not considered complete if the all the tasks
+            are complete BUT they were not completed with the correct condition
+            to satisfy the join"""
 
         workflow = self.setup_workflow(structured=False)
 
@@ -133,7 +173,10 @@ class JoinTest(TaskSpecTest):
                          workflow.get_tasks_from_spec_name('join')[
                              0].state)
 
+
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(JoinTest)
+
+
 if __name__ == '__main__':
     unittest.TextTestRunner(verbosity=2).run(suite())
