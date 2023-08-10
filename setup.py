@@ -7,8 +7,16 @@ from version import __version__
 from setuptools import setup, find_packages
 from os.path import dirname, join
 
+
+def get_version():
+    with open(join('SpiffWorkflow', '__init__.py')) as f:
+        for line in f:
+            if line.startswith('__version__ ='):
+                return line.split('=')[1].strip().strip('"\'')
+
+
 setup(name             = 'SpiffWorkflow',
-      version          = __version__,
+      version          = get_version(),
       description      = 'A workflow framework based on www.workflowpatterns.com',
       long_description = \
 """
