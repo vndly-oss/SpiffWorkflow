@@ -9,5 +9,3 @@ from .exceptions import WorkflowException
 import inspect
 __all__ = [name for name, obj in list(locals().items())
            if not (name.startswith('_') or inspect.ismodule(obj))]
-
-__version__ = "vDEVELOPMENT-vndly-0.0.1"
